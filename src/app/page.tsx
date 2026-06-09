@@ -1,64 +1,128 @@
-import Image from "next/image";
+import { fetchMarkets, fetchTags, ProcessedMarket } from "@/lib/polymarket";
+import MarketCard from "@/components/MarketCard";
+import Link from "next/link";
 
-export default function Home() {
+interface PageProps {
+  searchParams: Promise<{ tag?: string }>;
+}
+
+function StatsBar({ markets }: { markets: ProcessedMarket[] }) {
+  const avg = markets.length
+    ? Math.round(markets.reduce((s, m) => s + m.yesPrice, 0) / markets.length * 100)
+    : 0;
+  const high = markets.filter((m) => m.yesPrice >= 0.6).length;
+  const low = markets.filter((m) => m.yesPrice < 0.4).length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="grid grid-cols-3 border-b border-[var(--border)]">
+      {[
+        { label: "Markets", value: markets.length },
+        { label: "Avg. YES", value: `${avg}%` },
+        { label: "High conf.", value: high },
+      ].map((s) => (
+        <div key={s.label} className="py-6 px-6 border-r border-[var(--border)] last:border-r-0">
+          <p className="text-xs text-[var(--muted)] tracking-widest uppercase mb-1">{s.label}</p>
+          <p className="text-3xl font-light tabular-nums">{s.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default async function HomePage({ searchParams }: PageProps) {
+  const { tag } = await searchParams;
+
+  const [markets, tags] = await Promise.all([
+    fetchMarkets(24, tag),
+    fetchTags(),
+  ]);
+
+  return (
+    <div className="min-h-screen" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+
+      {/* Header */}
+      <header className="border-b border-[var(--border)]">
+        <div className="max-w-[1400px] mx-auto px-6 py-5 flex items-end justify-between">
+          <div>
+            <h1 className="text-sm font-medium tracking-[0.2em] uppercase">
+              Poly<span className="opacity-40">market</span>
+            </h1>
+          </div>
+          <p className="text-xs text-[var(--muted)] tracking-wide">
+            Updated every 5 min
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </header>
+
+      <main className="max-w-[1400px] mx-auto">
+
+        {/* Stats bar */}
+        <StatsBar markets={markets} />
+
+        {/* Filter row */}
+        <div className="border-b border-[var(--border)] px-6 py-4 flex items-center gap-1 overflow-x-auto">
+          <Link
+            href="/"
+            className={`flex-none text-xs tracking-wide px-3 py-1.5 transition-colors ${
+              !tag
+                ? "bg-[var(--foreground)] text-[var(--background)]"
+                : "text-[var(--muted)] hover:text-[var(--foreground)]"
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            All
+          </Link>
+          {tags.slice(0, 14).map((t) => (
+            <Link
+              key={t.id}
+              href={`?tag=${t.id}`}
+              className={`flex-none text-xs tracking-wide px-3 py-1.5 transition-colors ${
+                tag === t.id
+                  ? "bg-[var(--foreground)] text-[var(--background)]"
+                  : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
         </div>
+
+        {/* Grid */}
+        {markets.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-40 text-[var(--muted)]">
+            <p className="text-xs tracking-widest uppercase">No markets found</p>
+          </div>
+        ) : (
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            style={{
+              borderLeft: "1px solid var(--border)",
+              borderTop: "1px solid var(--border)",
+            }}
+          >
+            {markets.map((market, i) => (
+              <a
+                key={market.id}
+                href={`https://polymarket.com/event/${market.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  borderRight: "1px solid var(--border)",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <MarketCard market={market} index={i} />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="border-t border-[var(--border)] px-6 py-5">
+          <p className="text-xs text-[var(--muted)] tracking-wide">
+            Data — Polymarket Gamma API
+          </p>
+        </div>
+
       </main>
     </div>
   );
