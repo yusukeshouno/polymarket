@@ -16,6 +16,18 @@ import {
   StackedSegments,
   TypoLarge,
 } from "./ProbabilityViz";
+import {
+  QuantileDotPlot,
+  RandomIconArray,
+  PersonPictogram,
+  FanChart,
+  LiquidGauge,
+  SnakeBar,
+  ProbWheel,
+  DensityBar,
+  VSUPBar,
+  ProportionalCircle,
+} from "./ProbabilityVizNew";
 
 interface MarketCardProps {
   market: ProcessedMarket;
@@ -33,9 +45,14 @@ function formatVol(v: number | string): string {
 }
 
 const VIZ_TYPES = [
+  // Original 10
   ArcGauge, DotGrid, VerticalBar, SplitBar,
   RadialDonut, SliderTrack, SegmentBlocks,
   Waveform, StackedSegments, TypoLarge,
+  // New 10 (K–T)
+  QuantileDotPlot, RandomIconArray, PersonPictogram, FanChart,
+  LiquidGauge, SnakeBar, ProbWheel, DensityBar,
+  VSUPBar, ProportionalCircle,
 ] as const;
 
 export default function MarketCard({ market, index, t, lang }: MarketCardProps) {
