@@ -18,29 +18,47 @@ interface MarketGridProps {
 
 export type { BilingualMarket };
 
+type SortKey = "volume" | "close" | "low" | "high";
+
+const SORT_OPTIONS: { key: SortKey; en: string; ja: string }[] = [
+  { key: "volume", en: "Volume",     ja: "出来高" },
+  { key: "close",  en: "Close call", ja: "僅差"   },
+  { key: "low",    en: "0%",         ja: "0%"     },
+  { key: "high",   en: "100%",       ja: "100%"   },
+];
+
+function sortMarkets(markets: BilingualMarket[], key: SortKey): BilingualMarket[] {
+  const copy = [...markets];
+  switch (key) {
+    case "volume": return copy; // already sorted by volume from API
+    case "close":  return copy.sort((a, b) => Math.abs(a.yesPrice - 0.5) - Math.abs(b.yesPrice - 0.5));
+    case "low":    return copy.sort((a, b) => a.yesPrice - b.yesPrice);
+    case "high":   return copy.sort((a, b) => b.yesPrice - a.yesPrice);
+  }
+}
+
 const PAGE_SIZE = 24;
 
 export default function MarketGrid({ markets, tags, initialTag }: MarketGridProps) {
   const { lang } = useLang();
   const t = translations[lang];
   const [activeTag, setActiveTag] = useState<string | undefined>(initialTag);
+  const [sortKey, setSortKey] = useState<SortKey>("volume");
 
-  // Client-side tag filter — instant
+  // Client-side tag filter + sort — instant
   const filtered = useMemo(
-    () =>
-      activeTag
-        ? markets.filter((m) => m.tags.includes(activeTag))
-        : markets,
+    () => activeTag ? markets.filter((m) => m.tags.includes(activeTag)) : markets,
     [markets, activeTag]
   );
 
-  // Swap question text
+  const sorted = useMemo(() => sortMarkets(filtered as BilingualMarket[], sortKey), [filtered, sortKey]);
+
   const displayMarkets = useMemo(
-    () => filtered.slice(0, PAGE_SIZE).map((m) => ({
+    () => sorted.slice(0, PAGE_SIZE).map((m) => ({
       ...m,
       question: lang === "ja" ? m.questionJa : m.question,
     })),
-    [filtered, lang]
+    [sorted, lang]
   );
 
   // Stats
@@ -50,16 +68,23 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
   const high = displayMarkets.filter((m) => m.yesPrice >= 0.6).length;
   const statsItems = [
     { label: t.stats.markets, value: displayMarkets.length },
-    { label: t.stats.avgYes, value: `${avg}%` },
+    { label: t.stats.avgYes,  value: `${avg}%` },
     { label: t.stats.highConf, value: high },
   ];
 
   function handleTag(slug: string | undefined) {
     setActiveTag(slug);
-    // Update URL without navigation
     const url = new URL(window.location.href);
     if (slug) url.searchParams.set("tag", slug);
     else url.searchParams.delete("tag");
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  function handleSort(key: SortKey) {
+    setSortKey(key);
+    const url = new URL(window.location.href);
+    if (key !== "volume") url.searchParams.set("sort", key);
+    else url.searchParams.delete("sort");
     window.history.replaceState({}, "", url.toString());
   }
 
@@ -75,29 +100,54 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
         ))}
       </div>
 
-      {/* Tag filter */}
-      <div className="border-b px-6 py-4 flex items-center gap-1 overflow-x-auto" style={{ borderColor: "var(--border)" }}>
-        <button
-          onClick={() => handleTag(undefined)}
-          className={`flex-none text-xs tracking-wide px-3 py-1.5 transition-colors ${
-            !activeTag ? "bg-[var(--foreground)] text-[var(--background)]" : ""
-          }`}
-          style={!activeTag ? {} : { color: "var(--muted)" }}
-        >
-          {t.filter.all}
-        </button>
-        {tags.slice(0, 16).map((tg) => (
+      {/* Tag filter + Sort — same row */}
+      <div className="border-b flex items-stretch" style={{ borderColor: "var(--border)" }}>
+        {/* Tags — scrollable */}
+        <div className="flex-1 px-6 py-4 flex items-center gap-1 overflow-x-auto min-w-0">
           <button
-            key={tg.slug}
-            onClick={() => handleTag(tg.slug)}
-            className={`flex-none text-xs tracking-wide px-3 py-1.5 transition-colors ${
-              activeTag === tg.slug ? "bg-[var(--foreground)] text-[var(--background)]" : ""
-            }`}
-            style={activeTag === tg.slug ? {} : { color: "var(--muted)" }}
+            onClick={() => handleTag(undefined)}
+            className="flex-none text-xs tracking-wide px-3 py-1.5 transition-colors"
+            style={!activeTag
+              ? { background: "var(--foreground)", color: "var(--background)" }
+              : { color: "var(--muted)" }}
           >
-            {tg.label}
+            {t.filter.all}
           </button>
-        ))}
+          {tags.slice(0, 16).map((tg) => (
+            <button
+              key={tg.slug}
+              onClick={() => handleTag(tg.slug)}
+              className="flex-none text-xs tracking-wide px-3 py-1.5 transition-colors"
+              style={activeTag === tg.slug
+                ? { background: "var(--foreground)", color: "var(--background)" }
+                : { color: "var(--muted)" }}
+            >
+              {tg.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Sort — right side, fixed */}
+        <div
+          className="flex-none flex items-center gap-0 border-l"
+          style={{ borderColor: "var(--border)" }}
+        >
+          {SORT_OPTIONS.map((opt, i) => (
+            <button
+              key={opt.key}
+              onClick={() => handleSort(opt.key)}
+              className="text-xs tracking-wide px-4 py-1.5 h-full transition-colors border-r last:border-r-0"
+              style={{
+                borderColor: "var(--border)",
+                ...(sortKey === opt.key
+                  ? { background: "var(--foreground)", color: "var(--background)" }
+                  : { color: "var(--muted)" }),
+              }}
+            >
+              {lang === "ja" ? opt.ja : opt.en}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Grid */}
