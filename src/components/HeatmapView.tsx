@@ -18,108 +18,149 @@ function hexToRgb(hex: string) {
   return { r, g, b };
 }
 
-export default function HeatmapView({
-  markets,
-  t,
-  watchedIds,
-  onToggleWatch,
-}: HeatmapViewProps) {
+export default function HeatmapView({ markets, t, watchedIds, onToggleWatch }: HeatmapViewProps) {
   if (!markets.length) return null;
 
-  // Normalize volumes for sizing
   const volumes = markets.map((m) => Math.max(m.volume, 1));
   const maxVol = Math.max(...volumes);
-  const minVol = Math.min(...volumes);
 
-  // Cell area proportional to sqrt(volume) — less extreme than linear
-  const getWeight = (vol: number) =>
-    Math.sqrt((vol - minVol) / (maxVol - minVol + 1) + 0.1);
+  // Normalize volume to a tier: 3 = large, 2 = medium, 1 = small
+  const getTier = (vol: number) => {
+    const ratio = vol / maxVol;
+    if (ratio >= 0.5) return 3;
+    if (ratio >= 0.15) return 2;
+    return 1;
+  };
+
+  // Column span in a 12-col grid
+  const getSpan = (tier: number) => {
+    if (tier === 3) return 6;  // half-width
+    if (tier === 2) return 4;  // third-width
+    return 3;                  // quarter-width
+  };
+
+  // Height by tier
+  const getHeight = (tier: number) => {
+    if (tier === 3) return 160;
+    if (tier === 2) return 120;
+    return 90;
+  };
 
   return (
-    <div className="p-4">
-      <div className="flex flex-wrap gap-2">
-        {markets.map((market, i) => {
-          const pct = Math.round(market.yesPrice * 100);
-          const weight = getWeight(market.volume);
-          const color = cardColor(i);
-          const { r, g, b } = hexToRgb(color);
-          // Background opacity scales with probability distance from 50%
-          const intensity = 0.12 + (Math.abs(pct - 50) / 50) * 0.55;
-          const bg = `rgba(${r},${g},${b},${intensity.toFixed(2)})`;
-          const isWatched = watchedIds.has(market.id);
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(12, 1fr)",
+        gap: 4,
+        padding: 16,
+      }}
+    >
+      {markets.map((market, i) => {
+        const pct = Math.round(market.yesPrice * 100);
+        const tier = getTier(market.volume);
+        const span = getSpan(tier);
+        const height = getHeight(tier);
+        const color = cardColor(i);
+        const { r, g, b } = hexToRgb(color);
+        const intensity = 0.1 + (Math.abs(pct - 50) / 50) * 0.5;
+        const delta = market.oneDayChange ?? 0;
+        const deltaPct = Math.round(delta * 100 * 10) / 10;
+        const isWatched = watchedIds.has(market.id);
 
-          // Cell size: min 120px, max 320px based on weight
-          const size = Math.round(120 + weight * 200);
-
-          return (
+        return (
+          <div
+            key={market.id}
+            style={{
+              gridColumn: `span ${span}`,
+              height,
+              background: `rgba(${r},${g},${b},${intensity.toFixed(2)})`,
+              border: `1px solid rgba(${r},${g},${b},0.2)`,
+              borderRadius: 3,
+              position: "relative",
+              overflow: "hidden",
+              cursor: "pointer",
+              transition: "transform 0.12s, opacity 0.12s",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+          >
             <a
-              key={market.id}
               href={`https://polymarket.com/event/${market.eventSlug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="relative flex-none group"
+              className="absolute inset-0"
+            />
+
+            {/* Question */}
+            <p
               style={{
-                width: size,
-                height: size * 0.65,
-                background: bg,
-                borderRadius: 4,
-                border: `1px solid rgba(${r},${g},${b},0.25)`,
+                position: "absolute", top: 6, left: 7, right: 24,
+                fontSize: tier === 3 ? 11 : 9,
+                lineHeight: 1.35,
+                color: "var(--foreground)",
+                opacity: 0.75,
+                display: "-webkit-box",
+                WebkitLineClamp: tier === 1 ? 2 : 3,
+                WebkitBoxOrient: "vertical",
                 overflow: "hidden",
-                transition: "transform 0.15s, box-shadow 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = "scale(1.03)";
-                (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 20px rgba(${r},${g},${b},0.25)`;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-                (e.currentTarget as HTMLElement).style.boxShadow = "none";
               }}
             >
-              {/* Big percentage */}
+              {market.question}
+            </p>
+
+            {/* Big % */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: 6,
+                right: 8,
+                fontSize: tier === 3 ? 28 : tier === 2 ? 22 : 16,
+                fontWeight: 200,
+                color,
+                lineHeight: 1,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {pct}%
+            </div>
+
+            {/* Delta */}
+            {Math.abs(deltaPct) >= 0.1 && (
               <div
-                className="absolute bottom-2 right-3 tabular-nums"
-                style={{ fontSize: Math.round(size * 0.18), fontWeight: 200, color, lineHeight: 1, opacity: 0.9 }}
-              >
-                {pct}%
-              </div>
-
-              {/* Question text */}
-              <div
-                className="absolute top-0 left-0 right-0 p-2"
-                style={{ fontSize: 10, lineHeight: 1.3, color: "var(--foreground)", opacity: 0.8 }}
-              >
-                <div className="line-clamp-3">{market.question}</div>
-              </div>
-
-              {/* Delta badge */}
-              {Math.abs(market.oneDayChange) > 0.005 && (
-                <div
-                  className="absolute top-2 right-2 text-[9px] font-medium px-1 rounded"
-                  style={{
-                    color: market.oneDayChange > 0 ? "#2e7d4f" : "#b52b27",
-                    background: "rgba(255,255,255,0.7)",
-                  }}
-                >
-                  {market.oneDayChange > 0 ? "▲" : "▼"}{Math.abs(Math.round(market.oneDayChange * 100 * 10) / 10)}
-                </div>
-              )}
-
-              {/* Watch star */}
-              <button
-                className="absolute bottom-2 left-2 text-[14px] opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onToggleWatch(market.id);
+                style={{
+                  position: "absolute",
+                  bottom: 7,
+                  left: 7,
+                  fontSize: 9,
+                  fontWeight: 500,
+                  color: deltaPct > 0 ? "#2e7d4f" : "#b52b27",
+                  background: "rgba(255,255,255,0.75)",
+                  borderRadius: 2,
+                  padding: "1px 3px",
+                  lineHeight: 1.4,
                 }}
-                style={{ color: isWatched ? "#f59e0b" : "var(--muted)", background: "rgba(255,255,255,0.7)", borderRadius: 4, padding: "1px 4px", lineHeight: 1 }}
               >
-                {isWatched ? "★" : "☆"}
-              </button>
-            </a>
-          );
-        })}
-      </div>
+                {deltaPct > 0 ? "▲" : "▼"}{Math.abs(deltaPct)}
+              </div>
+            )}
+
+            {/* Watch star */}
+            <button
+              style={{
+                position: "absolute", top: 4, right: 4,
+                fontSize: 11, lineHeight: 1,
+                color: isWatched ? "#f59e0b" : "rgba(0,0,0,0.15)",
+                background: "none", border: "none",
+                cursor: "pointer", zIndex: 10,
+                transition: "color 0.15s",
+              }}
+              onClick={(e) => { e.preventDefault(); onToggleWatch(market.id); }}
+            >
+              {isWatched ? "★" : "☆"}
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

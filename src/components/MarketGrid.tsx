@@ -6,7 +6,6 @@ import { translations } from "@/lib/i18n";
 import { useLang } from "./LangContext";
 import { useWatchlist } from "@/lib/useWatchlist";
 import MarketCard from "./MarketCard";
-import HeatmapView from "./HeatmapView";
 
 interface BilingualMarket extends ProcessedMarket {
   questionJa: string;
@@ -21,7 +20,6 @@ interface MarketGridProps {
 export type { BilingualMarket };
 
 type SortKey = "volume" | "close" | "low" | "high";
-type ViewMode = "grid" | "heatmap";
 
 const SORT_OPTIONS: { key: SortKey; en: string; ja: string }[] = [
   { key: "volume", en: "Volume",     ja: "出来高" },
@@ -47,7 +45,6 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
   const t = translations[lang];
   const [activeTag, setActiveTag] = useState<string | undefined>(initialTag);
   const [sortKey, setSortKey] = useState<SortKey>("volume");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showWatchlist, setShowWatchlist] = useState(false);
   const { toggle: toggleWatch, has: isWatched, ids: watchedIds, count: watchCount } = useWatchlist();
 
@@ -88,10 +85,6 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
     window.history.replaceState({}, "", url.toString());
   }
 
-  function handleSort(key: SortKey) {
-    setSortKey(key);
-  }
-
   return (
     <>
       {/* Stats */}
@@ -104,15 +97,14 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
         ))}
       </div>
 
-      {/* Controls row: Sort | Tags | View toggle */}
+      {/* Controls: Sort | Tags | Watchlist */}
       <div className="border-b flex items-stretch" style={{ borderColor: "var(--border)" }}>
-
         {/* Sort */}
         <div className="flex-none flex items-center border-r" style={{ borderColor: "var(--border)" }}>
           {SORT_OPTIONS.map((opt) => (
             <button
               key={opt.key}
-              onClick={() => handleSort(opt.key)}
+              onClick={() => setSortKey(opt.key)}
               className="text-xs tracking-wide px-4 py-1.5 h-full transition-colors border-r last:border-r-0"
               style={{
                 borderColor: "var(--border)",
@@ -149,7 +141,7 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
               {tg.label}
             </button>
           ))}
-          {/* Watchlist filter */}
+          {/* Watchlist */}
           <button
             onClick={() => { setShowWatchlist((v) => !v); setActiveTag(undefined); }}
             className="flex-none text-xs tracking-wide px-3 py-1.5 transition-colors ml-2"
@@ -160,39 +152,13 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
             ★ {watchCount > 0 ? watchCount : ""}
           </button>
         </div>
-
-        {/* View toggle */}
-        <div className="flex-none flex items-center border-l" style={{ borderColor: "var(--border)" }}>
-          {(["grid", "heatmap"] as ViewMode[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setViewMode(v)}
-              className="px-4 py-1.5 h-full text-xs tracking-wide transition-colors border-r last:border-r-0"
-              style={{
-                borderColor: "var(--border)",
-                ...(viewMode === v
-                  ? { background: "var(--foreground)", color: "var(--background)" }
-                  : { color: "var(--muted)" }),
-              }}
-            >
-              {v === "grid" ? "⊞" : "▦"}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Content */}
+      {/* Grid */}
       {displayMarkets.length === 0 ? (
         <div className="flex items-center justify-center py-40" style={{ color: "var(--muted)" }}>
           <p className="text-xs tracking-widest uppercase">{t.noMarkets}</p>
         </div>
-      ) : viewMode === "heatmap" ? (
-        <HeatmapView
-          markets={displayMarkets}
-          t={t}
-          watchedIds={watchedIds}
-          onToggleWatch={toggleWatch}
-        />
       ) : (
         <div
           className="grid grid-cols-2 md:grid-cols-4"
@@ -201,18 +167,20 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
           {displayMarkets.map((market, i) => (
             <div
               key={market.id}
-              className="relative"
+              className="relative group"
               style={{ borderRight: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
             >
               {/* Watchlist star */}
               <button
                 onClick={() => toggleWatch(market.id)}
-                className="absolute top-3 right-3 z-10 text-base opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity"
+                className="absolute top-3 right-3 z-10 text-base transition-opacity"
                 style={{
                   color: isWatched(market.id) ? "#f59e0b" : "var(--border)",
                   lineHeight: 1,
+                  opacity: isWatched(market.id) ? 1 : 0,
                 }}
-                title={isWatched(market.id) ? "Remove from watchlist" : "Add to watchlist"}
+                onMouseEnter={(e) => { if (!isWatched(market.id)) (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+                onMouseLeave={(e) => { if (!isWatched(market.id)) (e.currentTarget as HTMLElement).style.opacity = "0"; }}
               >
                 {isWatched(market.id) ? "★" : "☆"}
               </button>
