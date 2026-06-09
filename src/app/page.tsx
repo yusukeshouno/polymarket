@@ -33,7 +33,7 @@ export default async function HomePage({ searchParams }: PageProps) {
   const { tag } = await searchParams;
 
   const [markets, tags] = await Promise.all([
-    fetchMarkets(24, tag),
+    fetchMarkets(24, tag || undefined),
     fetchTags(),
   ]);
 
@@ -73,10 +73,10 @@ export default async function HomePage({ searchParams }: PageProps) {
           </Link>
           {tags.slice(0, 14).map((t) => (
             <Link
-              key={t.id}
-              href={`?tag=${t.id}`}
+              key={t.slug}
+              href={`?tag=${t.slug}`}
               className={`flex-none text-xs tracking-wide px-3 py-1.5 transition-colors ${
-                tag === t.id
+                tag === t.slug
                   ? "bg-[var(--foreground)] text-[var(--background)]"
                   : "text-[var(--muted)] hover:text-[var(--foreground)]"
               }`}

@@ -1,18 +1,30 @@
-export interface Market {
+export interface EventMarket {
   id: string;
   question: string;
   slug: string;
   endDate: string;
+  endDateIso: string;
   image: string;
-  icon: string;
   active: boolean;
   closed: boolean;
-  volume: number;
-  liquidity: number;
-  outcomes: string[];
-  outcomePrices: string[];
-  tags: string[];
-  category: string;
+  volume: number | string;
+  liquidity: number | string;
+  outcomes: string | string[];
+  outcomePrices: string | string[];
+}
+
+export interface PolyEvent {
+  id: string;
+  title: string;
+  slug: string;
+  endDate: string;
+  image: string;
+  volume: number | string;
+  liquidity: number | string;
+  active: boolean;
+  closed: boolean;
+  markets: EventMarket[];
+  tags: { id: string; label: string; slug: string }[];
 }
 
 export interface ProcessedMarket {
@@ -26,17 +38,16 @@ export interface ProcessedMarket {
   volume: number;
   liquidity: number;
   tags: string[];
-  category: string;
   weatherCondition: WeatherCondition;
   trend: "up" | "down" | "stable";
 }
 
 export type WeatherCondition =
-  | "sunny"      // 80-100% YES
+  | "sunny"       // 80-100%
   | "mostlySunny" // 60-80%
-  | "partlyCloudy" // 40-60%
-  | "mostlyCloudy" // 20-40%
-  | "rainy";     // 0-20%
+  | "partlyCloudy"// 40-60%
+  | "mostlyCloudy"// 20-40%
+  | "rainy";      // 0-20%
 
 export function getWeatherCondition(yesPrice: number): WeatherCondition {
   if (yesPrice >= 0.8) return "sunny";
@@ -46,73 +57,122 @@ export function getWeatherCondition(yesPrice: number): WeatherCondition {
   return "rainy";
 }
 
-export function processMarket(market: Market): ProcessedMarket | null {
-  if (!market.outcomePrices || !market.outcomes) return null;
+function toNum(v: number | string | undefined): number {
+  if (v === undefined || v === null) return 0;
+  const n = typeof v === "string" ? parseFloat(v) : v;
+  return isFinite(n) ? n : 0;
+}
+
+function processEventMarket(
+  m: EventMarket,
+  tags: string[]
+): ProcessedMarket | null {
+  if (!m.outcomePrices || !m.outcomes) return null;
+  if (!m.active || m.closed) return null;
 
   const rawPrices =
-    typeof market.outcomePrices === "string"
-      ? (JSON.parse(market.outcomePrices) as string[])
-      : market.outcomePrices;
+    typeof m.outcomePrices === "string"
+      ? (JSON.parse(m.outcomePrices) as string[])
+      : m.outcomePrices;
   const rawOutcomes =
-    typeof market.outcomes === "string"
-      ? (JSON.parse(market.outcomes) as string[])
-      : market.outcomes;
+    typeof m.outcomes === "string"
+      ? (JSON.parse(m.outcomes) as string[])
+      : m.outcomes;
 
   const prices = rawPrices.map((p) => parseFloat(p));
-  const yesIdx = rawOutcomes.findIndex(
-    (o) => o.toLowerCase() === "yes"
-  );
+  if (prices.some((p) => !isFinite(p))) return null;
+
+  const yesIdx = rawOutcomes.findIndex((o) => o.toLowerCase() === "yes");
   const yesPrice = yesIdx >= 0 ? prices[yesIdx] : prices[0];
-  const noPrice = 1 - yesPrice;
 
   return {
-    id: market.id,
-    question: market.question,
-    slug: market.slug,
-    endDate: market.endDate,
-    image: market.image,
+    id: m.id,
+    question: m.question,
+    slug: m.slug,
+    endDate: m.endDateIso || m.endDate,
+    image: m.image,
     yesPrice,
-    noPrice,
-    volume: market.volume || 0,
-    liquidity: market.liquidity || 0,
-    tags: market.tags || [],
-    category: market.category || "other",
+    noPrice: 1 - yesPrice,
+    volume: toNum(m.volume),
+    liquidity: toNum(m.liquidity),
+    tags,
     weatherCondition: getWeatherCondition(yesPrice),
     trend: yesPrice > 0.5 ? "up" : yesPrice < 0.5 ? "down" : "stable",
   };
 }
 
 export async function fetchMarkets(
-  limit = 20,
-  category?: string
+  limit = 24,
+  tagSlug?: string
 ): Promise<ProcessedMarket[]> {
+  // Fetch more events so we can filter & still fill the grid
+  const fetchLimit = tagSlug ? 100 : limit * 2;
   const params = new URLSearchParams({
-    limit: String(limit),
+    limit: String(fetchLimit),
     active: "true",
     closed: "false",
     order: "volume",
     ascending: "false",
   });
-  if (category) params.set("tag_id", category);
 
   const res = await fetch(
-    `https://gamma-api.polymarket.com/markets?${params}`,
+    `https://gamma-api.polymarket.com/events?${params}`,
     { next: { revalidate: 300 } }
   );
 
   if (!res.ok) throw new Error(`Polymarket API error: ${res.status}`);
+  const events: PolyEvent[] = await res.json();
 
-  const data: Market[] = await res.json();
-  return data.flatMap((m) => {
-    const processed = processMarket(m);
-    return processed ? [processed] : [];
-  });
+  // Filter by tag slug client-side
+  const filtered = tagSlug
+    ? events.filter((e) =>
+        e.tags?.some((t) => t.slug === tagSlug || t.id === tagSlug)
+      )
+    : events;
+
+  const results: ProcessedMarket[] = [];
+  for (const event of filtered) {
+    const tagSlugs = (event.tags || []).map((t) => t.slug);
+    for (const market of event.markets || []) {
+      const processed = processEventMarket(market, tagSlugs);
+      if (processed) {
+        results.push(processed);
+        if (results.length >= limit) break;
+      }
+    }
+    if (results.length >= limit) break;
+  }
+
+  return results;
 }
 
-export async function fetchTags(): Promise<{ id: string; label: string }[]> {
-  const res = await fetch("https://gamma-api.polymarket.com/tags?limit=20", {
-    next: { revalidate: 3600 },
-  });
+export async function fetchTags(): Promise<
+  { id: string; label: string; slug: string }[]
+> {
+  // Get tags that actually have active events
+  const res = await fetch(
+    "https://gamma-api.polymarket.com/events?limit=100&active=true&closed=false&order=volume&ascending=false",
+    { next: { revalidate: 3600 } }
+  );
   if (!res.ok) return [];
-  return res.json();
+  const events: PolyEvent[] = await res.json();
+
+  // Collect unique tags from events, sorted by frequency
+  const tagCount = new Map<string, { id: string; label: string; slug: string; count: number }>();
+  for (const event of events) {
+    for (const tag of event.tags || []) {
+      if (!tag.slug || tag.slug === "hide-from-new") continue;
+      const existing = tagCount.get(tag.slug);
+      if (existing) {
+        existing.count++;
+      } else {
+        tagCount.set(tag.slug, { id: tag.id, label: tag.label, slug: tag.slug, count: 1 });
+      }
+    }
+  }
+
+  return Array.from(tagCount.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 16)
+    .map(({ id, label, slug }) => ({ id, label, slug }));
 }
