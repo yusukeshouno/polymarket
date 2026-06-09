@@ -1,5 +1,6 @@
 import { fetchMarkets, fetchTags, ProcessedMarket } from "@/lib/polymarket";
 import { getLang, translations, T } from "@/lib/i18n";
+import { translateTexts } from "@/lib/translate";
 import MarketCard from "@/components/MarketCard";
 import LangToggle from "@/components/LangToggle";
 import { Suspense } from "react";
@@ -41,6 +42,13 @@ export default async function HomePage({ searchParams }: PageProps) {
     fetchTags(),
   ]);
 
+  // Translate market questions when lang=ja
+  const displayMarkets: ProcessedMarket[] = lang === "ja"
+    ? await translateTexts(markets.map((m) => m.question)).then((translated) =>
+        markets.map((m, i) => ({ ...m, question: translated[i] }))
+      )
+    : markets;
+
   // Build URL helper that preserves existing params
   function tagUrl(slug?: string) {
     const p = new URLSearchParams();
@@ -72,7 +80,7 @@ export default async function HomePage({ searchParams }: PageProps) {
       <main className="max-w-[1400px] mx-auto">
 
         {/* Stats */}
-        <StatsBar markets={markets} t={t} />
+        <StatsBar markets={displayMarkets} t={t} />
 
         {/* Tag filter */}
         <div className="border-b border-[var(--border)] px-6 py-4 flex items-center gap-1 overflow-x-auto">
@@ -102,7 +110,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         </div>
 
         {/* Grid */}
-        {markets.length === 0 ? (
+        {displayMarkets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-40" style={{ color: "var(--muted)" }}>
             <p className="text-xs tracking-widest uppercase">{t.noMarkets}</p>
           </div>
@@ -111,7 +119,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             style={{ borderLeft: "1px solid var(--border)", borderTop: "1px solid var(--border)" }}
           >
-            {markets.map((market, i) => (
+            {displayMarkets.map((market, i) => (
               <a
                 key={market.id}
                 href={`https://polymarket.com/event/${market.slug}`}
