@@ -6,6 +6,7 @@ import LangToggle from "@/components/LangToggle";
 import MarketGrid, { BilingualMarket } from "@/components/MarketGrid";
 import StatsSection from "@/components/StatsSection";
 import FooterLabel from "@/components/FooterLabel";
+import UpdatedText from "@/components/UpdatedText";
 import { Suspense } from "react";
 
 interface PageProps {
@@ -16,13 +17,14 @@ export default async function HomePage({ searchParams }: PageProps) {
   const { tag, lang: langParam } = await searchParams;
   const initialLang = getLang(langParam);
 
-  // Fetch markets + tags in parallel
+  // Fetch ALL markets (no tag filter) + tags in parallel
+  // Tag filtering happens client-side → instant tab switching
   const [markets, tags] = await Promise.all([
-    fetchMarkets(24, tag || undefined),
+    fetchMarkets(96),   // load enough to cover all tags
     fetchTags(),
   ]);
 
-  // Always pre-fetch JA translations → client gets both instantly, zero delay on toggle
+  // Pre-fetch JA translations for all markets at once
   const jaQuestions = await translateTexts(markets.map((m) => m.question));
 
   const bilingualMarkets: BilingualMarket[] = markets.map((m, i) => ({
@@ -30,18 +32,12 @@ export default async function HomePage({ searchParams }: PageProps) {
     questionJa: jaQuestions[i] ?? m.question,
   }));
 
-  const avg = markets.length
-    ? Math.round(markets.reduce((s, m) => s + m.yesPrice, 0) / markets.length * 100)
-    : 0;
-  const high = markets.filter((m) => m.yesPrice >= 0.6).length;
-
   return (
     <LangProvider initial={initialLang}>
       <div
         className="min-h-screen"
         style={{ background: "var(--background)", color: "var(--foreground)" }}
       >
-        {/* Header */}
         <header className="border-b" style={{ borderColor: "var(--border)" }}>
           <div className="max-w-[1400px] mx-auto px-6 py-5 flex items-center justify-between">
             <h1 className="text-sm font-medium tracking-[0.2em] uppercase">
@@ -49,22 +45,21 @@ export default async function HomePage({ searchParams }: PageProps) {
             </h1>
             <div className="flex items-center gap-5">
               <UpdatedText />
-              <Suspense>
-                <LangToggle />
-              </Suspense>
+              <Suspense><LangToggle /></Suspense>
             </div>
           </div>
         </header>
 
         <main className="max-w-[1400px] mx-auto">
-          <StatsSection count={markets.length} avg={avg} high={high} />
-          <MarketGrid markets={bilingualMarkets} tags={tags} activeTag={tag} />
+          {/* Stats react to active tag filter (client-side) */}
+          <MarketGrid
+            markets={bilingualMarkets}
+            tags={tags}
+            initialTag={tag}
+          />
           <FooterLabel />
         </main>
       </div>
     </LangProvider>
   );
 }
-
-// Tiny client leaf that reads "updated" label from lang context
-import UpdatedText from "@/components/UpdatedText";

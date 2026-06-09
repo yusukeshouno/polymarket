@@ -11,6 +11,10 @@ import {
   SplitBar,
   RadialDonut,
   SliderTrack,
+  SegmentBlocks,
+  Waveform,
+  StackedSegments,
+  TypoLarge,
 } from "./ProbabilityViz";
 
 interface MarketCardProps {
@@ -28,7 +32,11 @@ function formatVol(v: number | string): string {
   return `$${n.toFixed(0)}`;
 }
 
-const VIZ_TYPES = [ArcGauge, DotGrid, VerticalBar, SplitBar, RadialDonut, SliderTrack] as const;
+const VIZ_TYPES = [
+  ArcGauge, DotGrid, VerticalBar, SplitBar,
+  RadialDonut, SliderTrack, SegmentBlocks,
+  Waveform, StackedSegments, TypoLarge,
+] as const;
 
 export default function MarketCard({ market, index, t, lang }: MarketCardProps) {
   const pct = Math.round(market.yesPrice * 100);

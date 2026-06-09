@@ -136,10 +136,14 @@ export async function fetchMarkets(
   const results: ProcessedMarket[] = [];
   for (const event of filtered) {
     const tagSlugs = (event.tags || []).map((t) => t.slug);
+    // Max 2 markets per event → forces diversity across events
+    let perEvent = 0;
     for (const market of event.markets || []) {
+      if (perEvent >= 2) break;
       const processed = processEventMarket(market, tagSlugs, event.slug);
       if (processed) {
         results.push(processed);
+        perEvent++;
         if (results.length >= limit) break;
       }
     }
