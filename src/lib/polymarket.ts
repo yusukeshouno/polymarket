@@ -11,6 +11,8 @@ export interface EventMarket {
   liquidity: number | string;
   outcomes: string | string[];
   outcomePrices: string | string[];
+  oneDayPriceChange?: number;
+  clobTokenIds?: string[];
 }
 
 export interface PolyEvent {
@@ -30,8 +32,8 @@ export interface PolyEvent {
 export interface ProcessedMarket {
   id: string;
   question: string;
-  slug: string;       // market slug (internal)
-  eventSlug: string;  // event slug → used for polymarket.com/event/:eventSlug
+  slug: string;
+  eventSlug: string;
   endDate: string;
   image: string;
   yesPrice: number;
@@ -41,6 +43,8 @@ export interface ProcessedMarket {
   tags: string[];
   weatherCondition: WeatherCondition;
   trend: "up" | "down" | "stable";
+  oneDayChange: number;   // e.g. +0.05 = +5pp
+  clobTokenId: string;    // for sparkline API
 }
 
 export type WeatherCondition =
@@ -101,6 +105,8 @@ function processEventMarket(
     tags,
     weatherCondition: getWeatherCondition(yesPrice),
     trend: yesPrice > 0.5 ? "up" : yesPrice < 0.5 ? "down" : "stable",
+    oneDayChange: typeof m.oneDayPriceChange === "number" ? m.oneDayPriceChange : 0,
+    clobTokenId: m.clobTokenIds?.[0] ?? "",
   };
 }
 

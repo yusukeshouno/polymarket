@@ -5,6 +5,7 @@ import { T } from "@/lib/i18n";
 import { cardColor } from "@/lib/palettes";
 import { formatDistanceToNow } from "date-fns";
 import { ja, enUS } from "date-fns/locale";
+import Sparkline from "./Sparkline";
 import {
   ArcGauge,
   DotGrid,
@@ -62,15 +63,18 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
   const locale = lang === "ja" ? ja : enUS;
   const timeLeft = formatDistanceToNow(endDate, { locale, addSuffix: true });
   const condLabel = t.conditions[market.weatherCondition];
-
+  const palette = cardColor(index);
   const VizComponent = VIZ_TYPES[index % VIZ_TYPES.length];
 
-  // Inject palette color as CSS variable — all viz components read var(--card-color)
-  const palette = cardColor(index);
+  // 24h change
+  const delta = market.oneDayChange ?? 0;
+  const deltaPct = Math.round(delta * 100 * 10) / 10; // e.g. +5.2
+  const deltaSign = deltaPct > 0 ? "+" : "";
+  const deltaColor = deltaPct > 0.5 ? "#2e7d4f" : deltaPct < -0.5 ? "#b52b27" : "var(--muted)";
 
   return (
     <div
-      className="group p-7 h-full flex flex-col gap-6 transition-colors duration-200 hover:bg-white"
+      className="group p-7 h-full flex flex-col gap-5 transition-colors duration-200 hover:bg-white"
       style={{ minHeight: "300px", "--card-color": palette } as React.CSSProperties}
     >
       {/* Top meta */}
@@ -78,15 +82,31 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
         <span className="text-[11px] tabular-nums" style={{ color: "var(--muted)" }}>
           {String(index + 1).padStart(2, "0")}
         </span>
-        <span className="text-[10px] tracking-[0.12em] uppercase" style={{ color: "var(--muted)" }}>
-          {condLabel}
-        </span>
+        <div className="flex items-center gap-2">
+          {/* 24h Δ */}
+          {deltaPct !== 0 && (
+            <span className="text-[11px] tabular-nums font-medium" style={{ color: deltaColor }}>
+              {deltaSign}{deltaPct}pp
+            </span>
+          )}
+          <span className="text-[10px] tracking-[0.12em] uppercase" style={{ color: "var(--muted)" }}>
+            {condLabel}
+          </span>
+        </div>
       </div>
 
       {/* Visualization */}
       <div className="flex-1 flex flex-col justify-center">
         <VizComponent pct={pct} t={t} />
       </div>
+
+      {/* Sparkline */}
+      {market.clobTokenId && (
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] tracking-widest uppercase" style={{ color: "var(--muted)" }}>7D</span>
+          <Sparkline tokenId={market.clobTokenId} color={palette} height={28} />
+        </div>
+      )}
 
       {/* Divider */}
       <div style={{ height: 1, background: "var(--border)", width: "100%" }} />
