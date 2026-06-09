@@ -1,5 +1,7 @@
 "use client";
 
+import { T } from "@/lib/i18n";
+
 /** Probability → color mapping (muted but distinct) */
 export function probColor(pct: number): string {
   if (pct >= 80) return "#2d7a4f"; // deep green
@@ -10,7 +12,7 @@ export function probColor(pct: number): string {
 }
 
 // ── A: Arc gauge ─────────────────────────────────────────────────────────────
-export function ArcGauge({ pct }: { pct: number }) {
+export function ArcGauge({ pct, t }: { pct: number; t: T }) {
   const r = 68;
   const cx = 90;
   const cy = 86;
@@ -65,7 +67,7 @@ export function ArcGauge({ pct }: { pct: number }) {
 }
 
 // ── B: Dot grid (10×10) ──────────────────────────────────────────────────────
-export function DotGrid({ pct }: { pct: number }) {
+export function DotGrid({ pct, t }: { pct: number; t: T }) {
   const filled = Math.round(pct);
   const color = probColor(pct);
 
@@ -92,14 +94,14 @@ export function DotGrid({ pct }: { pct: number }) {
           {pct}
         </span>
         <span style={{ fontSize: 18, fontWeight: 200, color: "var(--muted)" }}>%</span>
-        <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 4 }}>out of 100</span>
+        <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 4 }}>{t.viz.outOf100}</span>
       </div>
     </div>
   );
 }
 
 // ── C: Vertical bar ──────────────────────────────────────────────────────────
-export function VerticalBar({ pct }: { pct: number }) {
+export function VerticalBar({ pct, t }: { pct: number; t: T }) {
   const fillH = Math.max(pct, 2);
   const color = probColor(pct);
 
@@ -127,7 +129,7 @@ export function VerticalBar({ pct }: { pct: number }) {
           <span style={{ fontSize: 22, fontWeight: 200, color: "var(--muted)" }}>%</span>
         </div>
         <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.15em", marginTop: 6 }}>
-          YES PROBABILITY
+          {t.viz.yesProbability.toUpperCase()}
         </div>
       </div>
     </div>
@@ -135,7 +137,7 @@ export function VerticalBar({ pct }: { pct: number }) {
 }
 
 // ── D: Split bar (YES | NO) ──────────────────────────────────────────────────
-export function SplitBar({ pct }: { pct: number }) {
+export function SplitBar({ pct, t }: { pct: number; t: T }) {
   const no = 100 - pct;
   const color = probColor(pct);
 
@@ -168,7 +170,7 @@ export function SplitBar({ pct }: { pct: number }) {
 }
 
 // ── E: Radial donut ──────────────────────────────────────────────────────────
-export function RadialDonut({ pct }: { pct: number }) {
+export function RadialDonut({ pct, t }: { pct: number; t: T }) {
   const r = 46;
   const circ = 2 * Math.PI * r;
   const fill = (pct / 100) * circ;
@@ -212,7 +214,7 @@ export function RadialDonut({ pct }: { pct: number }) {
 }
 
 // ── F: Slider track ──────────────────────────────────────────────────────────
-export function SliderTrack({ pct }: { pct: number }) {
+export function SliderTrack({ pct, t }: { pct: number; t: T }) {
   const clampedPct = Math.max(2, Math.min(98, pct));
   const thumbX = 12 + (176 * clampedPct) / 100;
   const color = probColor(pct);
@@ -235,9 +237,9 @@ export function SliderTrack({ pct }: { pct: number }) {
             fill="var(--background)" stroke={color} strokeWidth="2" />
         </svg>
         <div className="flex justify-between" style={{ fontSize: 10, color: "var(--muted)" }}>
-          <span>0%</span>
-          <span>50%</span>
-          <span>100%</span>
+          <span>{t.viz.zeroLabel}</span>
+          <span>{t.viz.midLabel}</span>
+          <span>{t.viz.hundredLabel}</span>
         </div>
       </div>
     </div>

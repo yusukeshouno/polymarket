@@ -1,8 +1,9 @@
 "use client";
 
 import { ProcessedMarket } from "@/lib/polymarket";
+import { T } from "@/lib/i18n";
 import { formatDistanceToNow } from "date-fns";
-import { ja } from "date-fns/locale";
+import { ja, enUS } from "date-fns/locale";
 import {
   ArcGauge,
   DotGrid,
@@ -15,6 +16,8 @@ import {
 interface MarketCardProps {
   market: ProcessedMarket;
   index: number;
+  t: T;
+  lang: "en" | "ja";
 }
 
 function formatVol(v: number | string): string {
@@ -27,38 +30,20 @@ function formatVol(v: number | string): string {
 
 const VIZ_TYPES = [ArcGauge, DotGrid, VerticalBar, SplitBar, RadialDonut, SliderTrack] as const;
 
-const VIZ_LABELS = [
-  "Arc gauge",
-  "Dot grid",
-  "Vertical bar",
-  "Split bar",
-  "Radial donut",
-  "Slider",
-] as const;
-
-const CONDITION_LABEL: Record<string, string> = {
-  sunny:        "Almost certain",
-  mostlySunny:  "Likely",
-  partlyCloudy: "Even odds",
-  mostlyCloudy: "Unlikely",
-  rainy:        "Very unlikely",
-};
-
-export default function MarketCard({ market, index }: MarketCardProps) {
+export default function MarketCard({ market, index, t, lang }: MarketCardProps) {
   const pct = Math.round(market.yesPrice * 100);
   const endDate = new Date(market.endDate);
-  const timeLeft = formatDistanceToNow(endDate, { locale: ja, addSuffix: true });
-  const condLabel = CONDITION_LABEL[market.weatherCondition] ?? "";
+  const locale = lang === "ja" ? ja : enUS;
+  const timeLeft = formatDistanceToNow(endDate, { locale, addSuffix: true });
+  const condLabel = t.conditions[market.weatherCondition];
 
   const VizComponent = VIZ_TYPES[index % VIZ_TYPES.length];
-  const vizLabel = VIZ_LABELS[index % VIZ_LABELS.length];
 
   return (
     <div
       className="group p-7 h-full flex flex-col gap-6 transition-colors duration-200 hover:bg-white"
       style={{ minHeight: "300px" }}
     >
-
       {/* Top meta */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] tabular-nums" style={{ color: "var(--muted)" }}>
@@ -71,7 +56,7 @@ export default function MarketCard({ market, index }: MarketCardProps) {
 
       {/* Visualization */}
       <div className="flex-1 flex flex-col justify-center">
-        <VizComponent pct={pct} />
+        <VizComponent pct={pct} t={t} />
       </div>
 
       {/* Divider */}
@@ -87,7 +72,6 @@ export default function MarketCard({ market, index }: MarketCardProps) {
         <span>{formatVol(market.volume)}</span>
         <span>{timeLeft}</span>
       </div>
-
     </div>
   );
 }
