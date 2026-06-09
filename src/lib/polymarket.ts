@@ -30,7 +30,8 @@ export interface PolyEvent {
 export interface ProcessedMarket {
   id: string;
   question: string;
-  slug: string;
+  slug: string;       // market slug (internal)
+  eventSlug: string;  // event slug → used for polymarket.com/event/:eventSlug
   endDate: string;
   image: string;
   yesPrice: number;
@@ -65,7 +66,8 @@ function toNum(v: number | string | undefined): number {
 
 function processEventMarket(
   m: EventMarket,
-  tags: string[]
+  tags: string[],
+  eventSlug: string
 ): ProcessedMarket | null {
   if (!m.outcomePrices || !m.outcomes) return null;
   if (!m.active || m.closed) return null;
@@ -89,6 +91,7 @@ function processEventMarket(
     id: m.id,
     question: m.question,
     slug: m.slug,
+    eventSlug,
     endDate: m.endDateIso || m.endDate,
     image: m.image,
     yesPrice,
@@ -134,7 +137,7 @@ export async function fetchMarkets(
   for (const event of filtered) {
     const tagSlugs = (event.tags || []).map((t) => t.slug);
     for (const market of event.markets || []) {
-      const processed = processEventMarket(market, tagSlugs);
+      const processed = processEventMarket(market, tagSlugs, event.slug);
       if (processed) {
         results.push(processed);
         if (results.length >= limit) break;

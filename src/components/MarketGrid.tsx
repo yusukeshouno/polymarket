@@ -91,7 +91,7 @@ export default function MarketGrid({ markets, tags, activeTag }: MarketGridProps
           {displayMarkets.map((market, i) => (
             <a
               key={market.id}
-              href={`https://polymarket.com/event/${market.slug}`}
+              href={`https://polymarket.com/event/${market.eventSlug}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
