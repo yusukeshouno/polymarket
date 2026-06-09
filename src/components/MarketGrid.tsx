@@ -4,7 +4,9 @@ import { useState, useMemo } from "react";
 import { ProcessedMarket } from "@/lib/polymarket";
 import { translations } from "@/lib/i18n";
 import { useLang } from "./LangContext";
+import { useWatchlist } from "@/lib/useWatchlist";
 import MarketCard from "./MarketCard";
+import HeatmapView from "./HeatmapView";
 
 interface BilingualMarket extends ProcessedMarket {
   questionJa: string;
@@ -19,6 +21,7 @@ interface MarketGridProps {
 export type { BilingualMarket };
 
 type SortKey = "volume" | "close" | "low" | "high";
+type ViewMode = "grid" | "heatmap";
 
 const SORT_OPTIONS: { key: SortKey; en: string; ja: string }[] = [
   { key: "volume", en: "Volume",     ja: "出来高" },
@@ -30,7 +33,7 @@ const SORT_OPTIONS: { key: SortKey; en: string; ja: string }[] = [
 function sortMarkets(markets: BilingualMarket[], key: SortKey): BilingualMarket[] {
   const copy = [...markets];
   switch (key) {
-    case "volume": return copy; // already sorted by volume from API
+    case "volume": return copy;
     case "close":  return copy.sort((a, b) => Math.abs(a.yesPrice - 0.5) - Math.abs(b.yesPrice - 0.5));
     case "low":    return copy.sort((a, b) => a.yesPrice - b.yesPrice);
     case "high":   return copy.sort((a, b) => b.yesPrice - a.yesPrice);
@@ -44,12 +47,17 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
   const t = translations[lang];
   const [activeTag, setActiveTag] = useState<string | undefined>(initialTag);
   const [sortKey, setSortKey] = useState<SortKey>("volume");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [showWatchlist, setShowWatchlist] = useState(false);
+  const { toggle: toggleWatch, has: isWatched, ids: watchedIds, count: watchCount } = useWatchlist();
 
-  // Client-side tag filter + sort — instant
-  const filtered = useMemo(
-    () => activeTag ? markets.filter((m) => m.tags.includes(activeTag)) : markets,
-    [markets, activeTag]
-  );
+  const filtered = useMemo(() => {
+    let result = activeTag
+      ? markets.filter((m) => m.tags.includes(activeTag))
+      : markets;
+    if (showWatchlist) result = result.filter((m) => watchedIds.has(m.id));
+    return result;
+  }, [markets, activeTag, showWatchlist, watchedIds]);
 
   const sorted = useMemo(() => sortMarkets(filtered as BilingualMarket[], sortKey), [filtered, sortKey]);
 
@@ -61,7 +69,6 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
     [sorted, lang]
   );
 
-  // Stats
   const avg = displayMarkets.length
     ? Math.round(displayMarkets.reduce((s, m) => s + m.yesPrice, 0) / displayMarkets.length * 100)
     : 0;
@@ -74,6 +81,7 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
 
   function handleTag(slug: string | undefined) {
     setActiveTag(slug);
+    setShowWatchlist(false);
     const url = new URL(window.location.href);
     if (slug) url.searchParams.set("tag", slug);
     else url.searchParams.delete("tag");
@@ -82,10 +90,6 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
 
   function handleSort(key: SortKey) {
     setSortKey(key);
-    const url = new URL(window.location.href);
-    if (key !== "volume") url.searchParams.set("sort", key);
-    else url.searchParams.delete("sort");
-    window.history.replaceState({}, "", url.toString());
   }
 
   return (
@@ -100,9 +104,10 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
         ))}
       </div>
 
-      {/* Sort (left) + Tag filter (right, scrollable) */}
+      {/* Controls row: Sort | Tags | View toggle */}
       <div className="border-b flex items-stretch" style={{ borderColor: "var(--border)" }}>
-        {/* Sort — left side, fixed */}
+
+        {/* Sort */}
         <div className="flex-none flex items-center border-r" style={{ borderColor: "var(--border)" }}>
           {SORT_OPTIONS.map((opt) => (
             <button
@@ -121,18 +126,18 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
           ))}
         </div>
 
-        {/* Tags — scrollable */}
+        {/* Tags + Watchlist */}
         <div className="flex-1 px-4 py-4 flex items-center gap-1 overflow-x-auto min-w-0">
           <button
             onClick={() => handleTag(undefined)}
             className="flex-none text-xs tracking-wide px-3 py-1.5 transition-colors"
-            style={!activeTag
+            style={!activeTag && !showWatchlist
               ? { background: "var(--foreground)", color: "var(--background)" }
               : { color: "var(--muted)" }}
           >
             {t.filter.all}
           </button>
-          {tags.slice(0, 16).map((tg) => (
+          {tags.slice(0, 14).map((tg) => (
             <button
               key={tg.slug}
               onClick={() => handleTag(tg.slug)}
@@ -144,29 +149,82 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
               {tg.label}
             </button>
           ))}
+          {/* Watchlist filter */}
+          <button
+            onClick={() => { setShowWatchlist((v) => !v); setActiveTag(undefined); }}
+            className="flex-none text-xs tracking-wide px-3 py-1.5 transition-colors ml-2"
+            style={showWatchlist
+              ? { background: "#f59e0b", color: "#fff" }
+              : { color: watchCount > 0 ? "#f59e0b" : "var(--muted)" }}
+          >
+            ★ {watchCount > 0 ? watchCount : ""}
+          </button>
+        </div>
+
+        {/* View toggle */}
+        <div className="flex-none flex items-center border-l" style={{ borderColor: "var(--border)" }}>
+          {(["grid", "heatmap"] as ViewMode[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => setViewMode(v)}
+              className="px-4 py-1.5 h-full text-xs tracking-wide transition-colors border-r last:border-r-0"
+              style={{
+                borderColor: "var(--border)",
+                ...(viewMode === v
+                  ? { background: "var(--foreground)", color: "var(--background)" }
+                  : { color: "var(--muted)" }),
+              }}
+            >
+              {v === "grid" ? "⊞" : "▦"}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Content */}
       {displayMarkets.length === 0 ? (
         <div className="flex items-center justify-center py-40" style={{ color: "var(--muted)" }}>
           <p className="text-xs tracking-widest uppercase">{t.noMarkets}</p>
         </div>
+      ) : viewMode === "heatmap" ? (
+        <HeatmapView
+          markets={displayMarkets}
+          t={t}
+          watchedIds={watchedIds}
+          onToggleWatch={toggleWatch}
+        />
       ) : (
         <div
           className="grid grid-cols-2 md:grid-cols-4"
           style={{ borderLeft: "1px solid var(--border)", borderTop: "1px solid var(--border)" }}
         >
           {displayMarkets.map((market, i) => (
-            <a
+            <div
               key={market.id}
-              href={`https://polymarket.com/event/${market.eventSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              className="relative"
               style={{ borderRight: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
             >
-              <MarketCard market={market} index={i} t={t} lang={lang} />
-            </a>
+              {/* Watchlist star */}
+              <button
+                onClick={() => toggleWatch(market.id)}
+                className="absolute top-3 right-3 z-10 text-base opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity"
+                style={{
+                  color: isWatched(market.id) ? "#f59e0b" : "var(--border)",
+                  lineHeight: 1,
+                }}
+                title={isWatched(market.id) ? "Remove from watchlist" : "Add to watchlist"}
+              >
+                {isWatched(market.id) ? "★" : "☆"}
+              </button>
+              <a
+                href={`https://polymarket.com/event/${market.eventSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <MarketCard market={market} index={i} t={t} lang={lang} />
+              </a>
+            </div>
           ))}
         </div>
       )}
