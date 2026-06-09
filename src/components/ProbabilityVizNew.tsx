@@ -19,26 +19,44 @@ function deterministicShuffle(arr: boolean[], seed: number): boolean[] {
 export function QuantileDotPlot({ pct, t }: { pct: number; t: T }) {
   const color = probColor(pct);
   const yes = Math.round(pct), no = 100 - yes;
-  const D = 5, G = 2;
+  // 10 cols × 10 rows = 100 dots per column, D=dot size, G=gap
+  const D = 7, G = 3, COLS = 10;
+  const colW = COLS * (D + G) - G; // width of one column block
+  const H = 10 * (D + G) - G;     // max height
+  const BASE = H + 18;              // y baseline for labels
+
+  function column(count: number, xOffset: number, fill: string) {
+    return Array.from({ length: count }, (_, i) => {
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      return (
+        <circle key={`${xOffset}-${i}`}
+          cx={xOffset + col * (D + G) + D / 2}
+          cy={H - row * (D + G) - D / 2}
+          r={D / 2} fill={fill} />
+      );
+    });
+  }
+
+  const gap = 20;
+  const totalW = colW * 2 + gap;
+
   return (
     <div className="flex flex-col gap-3">
-      <svg width="150" height="76" viewBox="0 0 150 76">
-        {Array.from({ length: Math.min(yes, 50) }, (_, i) => (
-          <circle key={`y${i}`}
-            cx={6 + (i % 5) * (D + G)} cy={70 - Math.floor(i / 5) * (D + G)}
-            r={D / 2} fill={color} />
-        ))}
-        {Array.from({ length: Math.min(no, 50) }, (_, i) => (
-          <circle key={`n${i}`}
-            cx={82 + (i % 5) * (D + G)} cy={70 - Math.floor(i / 5) * (D + G)}
-            r={D / 2} fill="var(--border)" />
-        ))}
-        <text x="18" y="76" textAnchor="middle" fontSize="9" fill={color} fontFamily="inherit">YES</text>
-        <text x="94" y="76" textAnchor="middle" fontSize="9" fill="var(--muted)" fontFamily="inherit">NO</text>
+      <svg width={totalW} height={BASE + 4} viewBox={`0 0 ${totalW} ${BASE + 4}`}>
+        {/* Empty column outlines */}
+        <rect x="0" y="0" width={colW} height={H} rx="2" fill="var(--border)" opacity="0.25" />
+        <rect x={colW + gap} y="0" width={colW} height={H} rx="2" fill="var(--border)" opacity="0.25" />
+        {/* Filled dots */}
+        {column(yes, 0, color)}
+        {column(no, colW + gap, "var(--muted)")}
+        {/* Labels */}
+        <text x={colW / 2} y={BASE + 2} textAnchor="middle" fontSize="10" fill={color} fontFamily="inherit" fontWeight="400">YES {yes}</text>
+        <text x={colW + gap + colW / 2} y={BASE + 2} textAnchor="middle" fontSize="10" fill="var(--muted)" fontFamily="inherit">NO {no}</text>
       </svg>
       <div className="flex items-baseline gap-1">
-        <span style={{ fontSize: 40, fontWeight: 200, lineHeight: 1, letterSpacing: "-0.02em", color }}>{pct}</span>
-        <span style={{ fontSize: 16, fontWeight: 200, color: "var(--muted)" }}>%</span>
+        <span style={{ fontSize: 44, fontWeight: 200, lineHeight: 1, letterSpacing: "-0.02em", color }}>{pct}</span>
+        <span style={{ fontSize: 18, fontWeight: 200, color: "var(--muted)" }}>%</span>
       </div>
     </div>
   );
