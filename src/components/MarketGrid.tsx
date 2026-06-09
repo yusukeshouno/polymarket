@@ -100,10 +100,29 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
         ))}
       </div>
 
-      {/* Tag filter + Sort — same row */}
+      {/* Sort (left) + Tag filter (right, scrollable) */}
       <div className="border-b flex items-stretch" style={{ borderColor: "var(--border)" }}>
+        {/* Sort — left side, fixed */}
+        <div className="flex-none flex items-center border-r" style={{ borderColor: "var(--border)" }}>
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => handleSort(opt.key)}
+              className="text-xs tracking-wide px-4 py-1.5 h-full transition-colors border-r last:border-r-0"
+              style={{
+                borderColor: "var(--border)",
+                ...(sortKey === opt.key
+                  ? { background: "var(--foreground)", color: "var(--background)" }
+                  : { color: "var(--muted)" }),
+              }}
+            >
+              {lang === "ja" ? opt.ja : opt.en}
+            </button>
+          ))}
+        </div>
+
         {/* Tags — scrollable */}
-        <div className="flex-1 px-6 py-4 flex items-center gap-1 overflow-x-auto min-w-0">
+        <div className="flex-1 px-4 py-4 flex items-center gap-1 overflow-x-auto min-w-0">
           <button
             onClick={() => handleTag(undefined)}
             className="flex-none text-xs tracking-wide px-3 py-1.5 transition-colors"
@@ -123,28 +142,6 @@ export default function MarketGrid({ markets, tags, initialTag }: MarketGridProp
                 : { color: "var(--muted)" }}
             >
               {tg.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Sort — right side, fixed */}
-        <div
-          className="flex-none flex items-center gap-0 border-l"
-          style={{ borderColor: "var(--border)" }}
-        >
-          {SORT_OPTIONS.map((opt, i) => (
-            <button
-              key={opt.key}
-              onClick={() => handleSort(opt.key)}
-              className="text-xs tracking-wide px-4 py-1.5 h-full transition-colors border-r last:border-r-0"
-              style={{
-                borderColor: "var(--border)",
-                ...(sortKey === opt.key
-                  ? { background: "var(--foreground)", color: "var(--background)" }
-                  : { color: "var(--muted)" }),
-              }}
-            >
-              {lang === "ja" ? opt.ja : opt.en}
             </button>
           ))}
         </div>
