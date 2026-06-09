@@ -18,7 +18,7 @@ function deterministicShuffle(arr: boolean[], seed: number): boolean[] {
 // ── K: Quantile dotplot ── Kay et al. CHI 2016
 export function QuantileDotPlot({ pct, t }: { pct: number; t: T }) {
   const p = useMotion(900);
-  const color = probColor(pct);
+  
   const yes = Math.round(pct * p), no = Math.round((100 - pct) * p);
   const D=7, G=3, COLS=10;
   const colW = COLS*(D+G)-G;
@@ -38,13 +38,13 @@ export function QuantileDotPlot({ pct, t }: { pct: number; t: T }) {
       <svg width={totalW} height={BASE+4} viewBox={`0 0 ${totalW} ${BASE+4}`}>
         <rect x="0" y="0" width={colW} height={H} rx="2" fill="var(--border)" opacity="0.2" />
         <rect x={colW+gap} y="0" width={colW} height={H} rx="2" fill="var(--border)" opacity="0.2" />
-        {column(yes, 0, color)}
+        {column(yes, 0, "var(--card-color)")}
         {column(no, colW+gap, "var(--muted)")}
-        <text x={colW/2} y={BASE+2} textAnchor="middle" fontSize="10" fill={color} fontFamily="inherit">YES {Math.round(pct)}</text>
+        <text x={colW/2} y={BASE+2} textAnchor="middle" fontSize="10" fill="var(--card-color)" fontFamily="inherit">YES {Math.round(pct)}</text>
         <text x={colW+gap+colW/2} y={BASE+2} textAnchor="middle" fontSize="10" fill="var(--muted)" fontFamily="inherit">NO {100-Math.round(pct)}</text>
       </svg>
       <div className="flex items-baseline gap-1">
-        <span style={{ fontSize:44, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color }}>{Math.round(pct*p)}</span>
+        <span style={{ fontSize:44, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color: "var(--card-color)" }}>{Math.round(pct*p)}</span>
         <span style={{ fontSize:18, fontWeight:200, color:"var(--muted)" }}>%</span>
       </div>
     </div>
@@ -54,7 +54,7 @@ export function QuantileDotPlot({ pct, t }: { pct: number; t: T }) {
 // ── L: Random icon array (shuffled) ── frequency framing
 export function RandomIconArray({ pct, t }: { pct: number; t: T }) {
   const p = useMotion(900);
-  const color = probColor(pct);
+  
   const animFilled = Math.round(pct * p);
   const shuffled = deterministicShuffle(
     Array.from({ length: 100 }, (_, i) => i < Math.round(pct)),
@@ -66,14 +66,14 @@ export function RandomIconArray({ pct, t }: { pct: number; t: T }) {
         {shuffled.map((on, i) => (
           <div key={i} style={{
             width:10, height:10, borderRadius:2,
-            background: on && i < animFilled + (100 - Math.round(pct)) ? color : "var(--border)",
+            background: on && i < animFilled + (100 - Math.round(pct)) ? "var(--card-color)" : "var(--border)",
             opacity: on ? Math.min(1, (animFilled / Math.round(pct || 1)) + (i < animFilled ? 1 : 0)) : 1,
             transition:"opacity 0.05s",
           }} />
         ))}
       </div>
       <div className="flex items-baseline gap-1">
-        <span style={{ fontSize:40, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color }}>{Math.round(pct*p)}</span>
+        <span style={{ fontSize:40, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color: "var(--card-color)" }}>{Math.round(pct*p)}</span>
         <span style={{ fontSize:16, fontWeight:200, color:"var(--muted)" }}>%</span>
         <span style={{ fontSize:10, color:"var(--muted)", marginLeft:4 }}>{t.viz.outOf100}</span>
       </div>
@@ -96,7 +96,7 @@ function PersonIcon({ x, y, s, fill, opacity }: { x:number; y:number; s:number; 
 }
 export function PersonPictogram({ pct, t }: { pct: number; t: T }) {
   const p = useMotion(1000);
-  const color = probColor(pct);
+  
   const filled = Math.round(pct);
   const animFilled = Math.round(pct * p);
   const sz=11, gap=2, cols=10;
@@ -107,13 +107,13 @@ export function PersonPictogram({ pct, t }: { pct: number; t: T }) {
           <PersonIcon key={i}
             x={(i%cols)*(sz+gap)} y={Math.floor(i/cols)*(sz+gap)}
             s={sz}
-            fill={i < filled ? color : "var(--border)"}
+            fill={i < filled ? "var(--card-color)" : "var(--border)"}
             opacity={i < filled ? Math.min(1, (animFilled - i) / 1 + 0.2) : 1}
           />
         ))}
       </svg>
       <div className="flex items-baseline gap-1">
-        <span style={{ fontSize:36, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color }}>{Math.round(pct*p)}</span>
+        <span style={{ fontSize:36, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color: "var(--card-color)" }}>{Math.round(pct*p)}</span>
         <span style={{ fontSize:14, fontWeight:200, color:"var(--muted)" }}>%</span>
         <span style={{ fontSize:10, color:"var(--muted)", marginLeft:4 }}>{t.viz.outOf100}</span>
       </div>
@@ -124,7 +124,7 @@ export function PersonPictogram({ pct, t }: { pct: number; t: T }) {
 // ── N: Fan chart ── Bank of England style
 export function FanChart({ pct, t }: { pct: number; t: T }) {
   const p = useMotion();
-  const color = probColor(pct);
+  
   const cx=90, cy=88, maxR=74;
   const angleDeg = (pct/100) * 180 * p;
   function arc(r:number, endDeg:number, op:number) {
@@ -132,7 +132,7 @@ export function FanChart({ pct, t }: { pct: number; t: T }) {
     const rad=(e-180)*Math.PI/180;
     const ex=cx+r*Math.cos(rad), ey=cy+r*Math.sin(rad);
     const la=e>90?1:0;
-    return <path key={`${r}`} d={`M${cx-r},${cy} A${r},${r} 0 ${la},1 ${ex},${ey} L${cx},${cy} Z`} fill={color} opacity={op} />;
+    return <path key={`${r}`} d={`M${cx-r},${cy} A${r},${r} 0 ${la},1 ${ex},${ey} L${cx},${cy} Z`} fill="var(--card-color)" opacity={op} />;
   }
   return (
     <div className="flex flex-col gap-1">
@@ -145,7 +145,7 @@ export function FanChart({ pct, t }: { pct: number; t: T }) {
         <line x1={cx-maxR} y1={cy} x2={cx+maxR} y2={cy} stroke="var(--border)" strokeWidth="1" />
       </svg>
       <div className="flex items-baseline gap-1 -mt-1">
-        <span style={{ fontSize:40, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color }}>{Math.round(pct*p)}</span>
+        <span style={{ fontSize:40, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color: "var(--card-color)" }}>{Math.round(pct*p)}</span>
         <span style={{ fontSize:16, fontWeight:200, color:"var(--muted)" }}>%</span>
       </div>
     </div>
@@ -155,7 +155,7 @@ export function FanChart({ pct, t }: { pct: number; t: T }) {
 // ── O: Liquid fill gauge ──────────────────────────────────────────────────────
 export function LiquidGauge({ pct, t }: { pct: number; t: T }) {
   const p = useMotion(900);
-  const color = probColor(pct);
+  
   const W=52, H=88;
   const ap = pct * p;
   const fillY = H*(1-ap/100);
@@ -165,12 +165,12 @@ export function LiquidGauge({ pct, t }: { pct: number; t: T }) {
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
         <rect x="0" y="0" width={W} height={H} rx="6" fill="var(--border)" />
         <clipPath id={`lc${pct}`}><rect x="0" y="0" width={W} height={H} rx="6" /></clipPath>
-        <path d={wave} fill={color} clipPath={`url(#lc${pct})`} />
+        <path d={wave} fill="var(--card-color)" clipPath={`url(#lc${pct})`} />
         <line x1="0" y1={H*.5} x2={W} y2={H*.5} stroke="var(--background)" strokeWidth="1" opacity="0.5" strokeDasharray="2 2" />
         <rect x="0" y="0" width={W} height={H} rx="6" fill="none" stroke="var(--border)" strokeWidth="1.5" />
       </svg>
       <div>
-        <div style={{ fontSize:48, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color }}>
+        <div style={{ fontSize:48, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color: "var(--card-color)" }}>
           {Math.round(ap)}<span style={{ fontSize:20, fontWeight:200, color:"var(--muted)" }}>%</span>
         </div>
         <div style={{ fontSize:10, color:"var(--muted)", letterSpacing:"0.15em", marginTop:6 }}>
@@ -184,7 +184,7 @@ export function LiquidGauge({ pct, t }: { pct: number; t: T }) {
 // ── P: Snake bar ── 538 style
 export function SnakeBar({ pct, t }: { pct: number; t: T }) {
   const p = useMotion(900);
-  const color = probColor(pct);
+  
   const SEGS=20, filled=Math.round(pct/5*p);
   const sw=11, sh=14, sg=2, W=10*(sw+sg)-sg;
   return (
@@ -193,14 +193,14 @@ export function SnakeBar({ pct, t }: { pct: number; t: T }) {
         {Array.from({ length: SEGS }, (_,i) => {
           const row=Math.floor(i/10), col=row===0?i%10:9-(i%10);
           return <rect key={i} x={col*(sw+sg)} y={row*(sh+sg)} width={sw} height={sh} rx="2"
-            fill={i<filled?color:"var(--border)"}
+            fill={i<filled? "var(--card-color)":"var(--border)"}
             style={{ transition:"fill 0.08s" }} />;
         })}
         <path d={`M${W+1},${sh/2} Q${W+9},${sh+sg/2} ${W+1},${sh+sg+sh/2}`}
           fill="none" stroke="var(--border)" strokeWidth="1.5" />
       </svg>
       <div className="flex items-baseline gap-1">
-        <span style={{ fontSize:40, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color }}>{Math.round(pct*p)}</span>
+        <span style={{ fontSize:40, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color: "var(--card-color)" }}>{Math.round(pct*p)}</span>
         <span style={{ fontSize:16, fontWeight:200, color:"var(--muted)" }}>%</span>
       </div>
     </div>
@@ -210,7 +210,7 @@ export function SnakeBar({ pct, t }: { pct: number; t: T }) {
 // ── Q: Probability wheel / spinner ───────────────────────────────────────────
 export function ProbWheel({ pct, t }: { pct: number; t: T }) {
   const p = useMotion(900);
-  const color = probColor(pct);
+  
   const cx=54, cy=54, r=46, SEGS=10;
   const filledSegs = Math.round(pct/10 * p);
   function seg(i:number) {
@@ -223,17 +223,17 @@ export function ProbWheel({ pct, t }: { pct: number; t: T }) {
       <svg width="108" height="108" viewBox="0 0 108 108">
         {Array.from({length:SEGS},(_,i)=>(
           <path key={i} d={seg(i)}
-            fill={i<filledSegs?color:"var(--border)"}
+            fill={i<filledSegs? "var(--card-color)":"var(--border)"}
             stroke="var(--background)" strokeWidth="1.5"
             style={{ transition:"fill 0.08s" }} />
         ))}
         <circle cx={cx} cy={cy} r={r*.36} fill="var(--background)" />
-        <text x={cx} y={cy-3} textAnchor="middle" fontSize="18" fontWeight="200" fill={color} fontFamily="inherit">{Math.round(pct*p)}</text>
+        <text x={cx} y={cy-3} textAnchor="middle" fontSize="18" fontWeight="200" fill="var(--card-color)" fontFamily="inherit">{Math.round(pct*p)}</text>
         <text x={cx} y={cy+13} textAnchor="middle" fontSize="10" fill="var(--muted)" fontFamily="inherit">%</text>
       </svg>
       <div style={{ fontSize:11, lineHeight:2 }}>
         <div style={{ color:"var(--muted)", fontSize:10, letterSpacing:"0.12em" }}>{t.viz.yes}</div>
-        <div style={{ fontSize:18, fontWeight:200, color }}>{Math.round(pct*p)}%</div>
+        <div style={{ fontSize:18, fontWeight:200, color: "var(--card-color)" }}>{Math.round(pct*p)}%</div>
         <div style={{ height:6 }} />
         <div style={{ color:"var(--muted)", fontSize:10, letterSpacing:"0.12em" }}>{t.viz.no}</div>
         <div style={{ fontSize:18, fontWeight:200, color:"var(--foreground)" }}>{Math.round(100-pct*p)}%</div>
@@ -246,28 +246,28 @@ export function ProbWheel({ pct, t }: { pct: number; t: T }) {
 export function DensityBar({ pct, t }: { pct: number; t: T }) {
   const p = useMotion();
   const ap = pct * p;
-  const color = probColor(pct);
+  
   const id=`gd${pct}`;
   const p0=Math.max(ap-22,0), p1=Math.min(ap+22,100);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline gap-1">
-        <span style={{ fontSize:48, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color }}>{Math.round(ap)}</span>
+        <span style={{ fontSize:48, fontWeight:200, lineHeight:1, letterSpacing:"-0.02em", color: "var(--card-color)" }}>{Math.round(ap)}</span>
         <span style={{ fontSize:20, fontWeight:200, color:"var(--muted)" }}>%</span>
       </div>
       <div>
         <svg width="100%" height="44" viewBox="0 0 200 44" preserveAspectRatio="none">
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={color} stopOpacity="0" />
-              <stop offset={`${p0}%`} stopColor={color} stopOpacity="0.1" />
-              <stop offset={`${ap}%`} stopColor={color} stopOpacity="1" />
-              <stop offset={`${p1}%`} stopColor={color} stopOpacity="0.1" />
-              <stop offset="100%" stopColor={color} stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--card-color)" stopOpacity="0" />
+              <stop offset={`${p0}%`} stopColor="var(--card-color)" stopOpacity="0.1" />
+              <stop offset={`${ap}%`} stopColor="var(--card-color)" stopOpacity="1" />
+              <stop offset={`${p1}%`} stopColor="var(--card-color)" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="var(--card-color)" stopOpacity="0" />
             </linearGradient>
           </defs>
           <rect x="0" y="10" width="200" height="24" rx="2" fill={`url(#${id})`} />
-          <line x1={ap*2} y1="6" x2={ap*2} y2="38" stroke={color} strokeWidth="1.5" />
+          <line x1={ap*2} y1="6" x2={ap*2} y2="38" stroke="var(--card-color)" strokeWidth="1.5" />
         </svg>
         <div className="flex justify-between" style={{ fontSize:10, color:"var(--muted)" }}>
           <span>0%</span><span>50%</span><span>100%</span>
@@ -277,14 +277,14 @@ export function DensityBar({ pct, t }: { pct: number; t: T }) {
   );
 }
 
-// ── S: VSUP color encoding ── Correll et al. CHI 2018
+// ── S: VSUP "var(--card-color)" encoding ── Correll et al. CHI 2018
 export function VSUPBar({ pct, t }: { pct: number; t: T }) {
   const p = useMotion();
   const ap = pct * p;
   const certainty = Math.abs(pct-50)/50;
-  const color = probColor(pct);
+  
   const gray = 165;
-  const displayColor = certainty > 0.08 ? color : `rgb(${gray},${gray},${gray})`;
+  const displayColor = certainty > 0.08 ? "var(--card-color)" : `rgb(${gray},${gray},${gray})`;
   const label = certainty < 0.15 ? "UNCERTAIN" : certainty < 0.5 ? "LIKELY" : "ALMOST CERTAIN";
   return (
     <div className="flex flex-col gap-4">
@@ -304,14 +304,14 @@ export function VSUPBar({ pct, t }: { pct: number; t: T }) {
 // ── T: Proportional area circle ───────────────────────────────────────────────
 export function ProportionalCircle({ pct, t }: { pct: number; t: T }) {
   const p = useMotion();
-  const color = probColor(pct);
+  
   const maxR=50, r=pct>0?maxR*Math.sqrt(pct/100 * p):0;
   const cx=60, cy=60;
   return (
     <div className="flex items-center gap-3">
       <svg width="120" height="120" viewBox="0 0 120 120">
         <circle cx={cx} cy={cy} r={maxR} fill="none" stroke="var(--border)" strokeWidth="1" strokeDasharray="3 3" />
-        {r>0&&<circle cx={cx} cy={cy} r={r} fill={color} opacity="0.88" />}
+        {r>0&&<circle cx={cx} cy={cy} r={r} fill="var(--card-color)" opacity="0.88" />}
         {r>5&&<>
           <text x={cx} y={cy-2} textAnchor="middle" fontSize="18" fontWeight="200" fill="white" fontFamily="inherit">{Math.round(pct*p)}</text>
           <text x={cx} y={cy+14} textAnchor="middle" fontSize="10" fill="white" opacity="0.8" fontFamily="inherit">%</text>
@@ -320,7 +320,7 @@ export function ProportionalCircle({ pct, t }: { pct: number; t: T }) {
       <div>
         <div style={{ fontSize:9, color:"var(--muted)", letterSpacing:"0.1em", marginBottom:8 }}>AREA ∝ PROB</div>
         <div style={{ fontSize:11, color:"var(--muted)", lineHeight:2 }}>
-          <span style={{ color }}>●</span> {Math.round(pct*p)}% YES<br />
+          <span style={{ color:"var(--card-color)" }}>●</span> {Math.round(pct*p)}% YES<br />
           <span style={{ color:"var(--border)" }}>○</span> {Math.round(100-pct*p)}% NO
         </div>
       </div>

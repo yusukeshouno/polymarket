@@ -2,6 +2,7 @@
 
 import { ProcessedMarket } from "@/lib/polymarket";
 import { T } from "@/lib/i18n";
+import { cardColor } from "@/lib/palettes";
 import { formatDistanceToNow } from "date-fns";
 import { ja, enUS } from "date-fns/locale";
 import {
@@ -64,10 +65,13 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
 
   const VizComponent = VIZ_TYPES[index % VIZ_TYPES.length];
 
+  // Inject palette color as CSS variable — all viz components read var(--card-color)
+  const palette = cardColor(index);
+
   return (
     <div
       className="group p-7 h-full flex flex-col gap-6 transition-colors duration-200 hover:bg-white"
-      style={{ minHeight: "300px" }}
+      style={{ minHeight: "300px", "--card-color": palette } as React.CSSProperties}
     >
       {/* Top meta */}
       <div className="flex items-center justify-between">
