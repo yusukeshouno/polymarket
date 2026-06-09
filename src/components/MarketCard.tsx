@@ -84,9 +84,10 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
         </span>
         <div className="flex items-center gap-2">
           {/* 24h Δ */}
-          {deltaPct !== 0 && (
-            <span className="text-[11px] tabular-nums font-medium" style={{ color: deltaColor }}>
-              {deltaSign}{deltaPct}pp
+          {Math.abs(deltaPct) >= 0.1 && (
+            <span className="text-[11px] tabular-nums font-medium flex items-center gap-0.5" style={{ color: deltaColor }}>
+              {deltaPct > 0 ? "▲" : "▼"}
+              {Math.abs(deltaPct)}
             </span>
           )}
           <span className="text-[10px] tracking-[0.12em] uppercase" style={{ color: "var(--muted)" }}>

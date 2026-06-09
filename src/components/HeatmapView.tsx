@@ -101,7 +101,7 @@ export default function HeatmapView({
                     background: "rgba(255,255,255,0.7)",
                   }}
                 >
-                  {market.oneDayChange > 0 ? "+" : ""}{Math.round(market.oneDayChange * 100 * 10) / 10}pp
+                  {market.oneDayChange > 0 ? "▲" : "▼"}{Math.abs(Math.round(market.oneDayChange * 100 * 10) / 10)}
                 </div>
               )}
 
