@@ -70,7 +70,7 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
   const delta = market.oneDayChange ?? 0;
   const deltaPct = Math.round(delta * 100 * 10) / 10; // e.g. +5.2
   const deltaSign = deltaPct > 0 ? "+" : "";
-  const deltaColor = deltaPct > 0.5 ? "#2e7d4f" : deltaPct < -0.5 ? "#b52b27" : "var(--muted)";
+  const deltaColor = deltaPct > 0 ? "#2e7d4f" : deltaPct < 0 ? "#b52b27" : "var(--muted)";
 
   return (
     <div
