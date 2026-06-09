@@ -1,5 +1,24 @@
 export type Lang = "en" | "ja";
 
+// Loose type that accepts either language's string values
+export type T = {
+  siteName: string;
+  siteTagline: string;
+  updatedEvery: string;
+  stats: { markets: string; avgYes: string; highConf: string };
+  filter: { all: string };
+  conditions: {
+    sunny: string; mostlySunny: string; partlyCloudy: string;
+    mostlyCloudy: string; rainy: string;
+  };
+  viz: {
+    yesProbability: string; yes: string; no: string;
+    outOf100: string; zeroLabel: string; midLabel: string; hundredLabel: string;
+  };
+  noMarkets: string;
+  dataSource: string;
+};
+
 export const translations = {
   en: {
     siteName: "POLYMARKET",
@@ -64,8 +83,6 @@ export const translations = {
     dataSource: "データ提供 — Polymarket Gamma API",
   },
 } as const;
-
-export type T = typeof translations.en;
 
 export function getLang(param?: string): Lang {
   return param === "ja" ? "ja" : "en";
