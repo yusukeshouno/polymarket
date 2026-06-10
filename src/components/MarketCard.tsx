@@ -96,8 +96,8 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
         </div>
       </div>
 
-      {/* Visualization — fixed height, equal across all cards */}
-      <div style={{ height: 180, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      {/* Visualization — fixed height, centered */}
+      <div style={{ height: 180, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", width: "100%" }}>
         <VizComponent pct={pct} t={t} />
       </div>
 

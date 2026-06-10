@@ -101,8 +101,8 @@ export function PersonPictogram({ pct, t }: { pct: number; t: T }) {
   const animFilled = Math.round(pct * p);
   const sz=11, gap=2, cols=10;
   return (
-    <div className="flex flex-col gap-3">
-      <svg width={cols*(sz+gap)} height={cols*(sz+gap)} viewBox={`0 0 ${cols*(sz+gap)} ${cols*(sz+gap)}`}>
+    <div className="flex flex-col items-center gap-3" style={{ width: "100%" }}>
+      <svg width="100%" height={cols*(sz+gap)} viewBox={`0 0 ${cols*(sz+gap)} ${cols*(sz+gap)}`} preserveAspectRatio="xMidYMid meet">
         {Array.from({ length: 100 }, (_, i) => (
           <PersonIcon key={i}
             x={(i%cols)*(sz+gap)} y={Math.floor(i/cols)*(sz+gap)}
@@ -136,7 +136,7 @@ export function FanChart({ pct, t }: { pct: number; t: T }) {
   }
   return (
     <div className="flex flex-col gap-1">
-      <svg width="180" height="94" viewBox="0 0 180 94">
+      <svg width="100%" height="94" viewBox="0 0 180 94" preserveAspectRatio="xMidYMid meet">
         <path d={`M${cx-maxR},${cy} A${maxR},${maxR} 0 0,1 ${cx+maxR},${cy}`} fill="none" stroke="var(--border)" strokeWidth="1" />
         {arc(maxR,Math.min(angleDeg+25,180),0.07)}
         {arc(maxR*.82,Math.min(angleDeg+15,180),0.14)}
@@ -161,7 +161,7 @@ export function LiquidGauge({ pct, t }: { pct: number; t: T }) {
   const fillY = H*(1-ap/100);
   const wave = `M0,${fillY} C13,${fillY-5} 27,${fillY+5} ${W},${fillY} L${W},${H} L0,${H} Z`;
   return (
-    <div className="flex items-end gap-5">
+    <div className="flex items-end justify-center gap-6" style={{ width: "100%" }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
         <rect x="0" y="0" width={W} height={H} rx="6" fill="var(--border)" />
         <clipPath id={`lc${pct}`}><rect x="0" y="0" width={W} height={H} rx="6" /></clipPath>
@@ -188,8 +188,8 @@ export function SnakeBar({ pct, t }: { pct: number; t: T }) {
   const SEGS=20, filled=Math.round(pct/5*p);
   const sw=11, sh=14, sg=2, W=10*(sw+sg)-sg;
   return (
-    <div className="flex flex-col gap-3">
-      <svg width={W+12} height={sh*2+sg+4} viewBox={`0 0 ${W+12} ${sh*2+sg+4}`}>
+    <div className="flex flex-col items-center gap-3" style={{ width: "100%" }}>
+      <svg width="100%" height={sh*2+sg+4} viewBox={`0 0 ${W+12} ${sh*2+sg+4}`} preserveAspectRatio="xMidYMid meet">
         {Array.from({ length: SEGS }, (_,i) => {
           const row=Math.floor(i/10), col=row===0?i%10:9-(i%10);
           return <rect key={i} x={col*(sw+sg)} y={row*(sh+sg)} width={sw} height={sh} rx="2"
