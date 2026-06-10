@@ -96,9 +96,15 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
         </div>
       </div>
 
-      {/* Visualization */}
-      <div className="flex-1 flex flex-col justify-center">
-        <VizComponent pct={pct} t={t} />
+      {/* Visualization — fixed square, equal height across all cards */}
+      <div className="w-full" style={{ aspectRatio: "1 / 1", position: "relative" }}>
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          overflow: "hidden",
+        }}>
+          <VizComponent pct={pct} t={t} />
+        </div>
       </div>
 
       {/* Sparkline */}
