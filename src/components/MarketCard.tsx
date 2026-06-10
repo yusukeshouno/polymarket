@@ -97,7 +97,7 @@ export default function MarketCard({ market, index, t, lang }: MarketCardProps) 
       </div>
 
       {/* Visualization — fixed square, equal height across all cards */}
-      <div className="w-full" style={{ aspectRatio: "1 / 1", position: "relative" }}>
+      <div className="w-full" style={{ aspectRatio: "4 / 3", position: "relative" }}>
         <div style={{
           position: "absolute", inset: 0,
           display: "flex", flexDirection: "column", justifyContent: "center",
